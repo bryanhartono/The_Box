@@ -14,32 +14,63 @@ public enum MovementKeys : byte
 
 public class PlayerController : MonoBehaviour
 {
-    public Rigidbody2D body;
-    public SpriteRenderer spriteRenderer;
-    public Animator animator;
+    [SerializeField] private Rigidbody2D body;
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Animator animator;
+    [SerializeField] private Transform interactableTrigger;
+    [SerializeField] private Transform pickableBoxTransform;
+    [SerializeField] private GameObject previewBoxPrefab;
+    [SerializeField] private float moveSpeed = 1.0f;
+    
+    [Header("Placeable Area Limits")]
+    [SerializeField] private float minimumX = -1.04f;
+    [SerializeField] private float maximumX = 1.04f;
+    [SerializeField] private float minimumY = -0.56f;
+    [SerializeField] private float maximumY = 0.48f;
 
-    public float moveSpeed = 1.0f;
+    private Vector2 currentDirection;
+    private Vector2 lastMoveDirection;
+    private MovementKeys currentKeyPressed = MovementKeys.None;
+    private PickableBox currentPickableBox = null;
 
-    Vector2 currentDirection;
-    Vector2 lastMoveDirection;
+    private PickableBox interactableBox = null; // Box currently in range
+    private GameObject previewBoxInstance = null; // Reference to the instantiated ghost box
+    
+    private void Awake() 
+    {
+        lastMoveDirection = new Vector2(0.1f, -0.05f);
+    }
 
-    MovementKeys currentKeyPressed = MovementKeys.None;
-
-    void Update()
+    private void Update()
     {
         ProcessInputs();
         HandleSpriteFlipX();
         AnimateSprite();
+
+        if (currentPickableBox != null) // If player is holding a box
+        {
+            UpdateGhostBox();
+        }
+        else
+        {
+            DestroyGhostBox();
+        }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         body.velocity = currentDirection * moveSpeed;
     }
 
-    void ProcessInputs()
+    private void ProcessInputs()
     {
-        // Initialize movement vector
+        ProcessPlayerMovement();
+        ProcessPlayerActions();
+    }
+
+    #region Player Movement
+    private void ProcessPlayerMovement()
+    {
         currentDirection = Vector2.zero;
 
         // Handle key releases to reset the lock
@@ -56,9 +87,11 @@ public class PlayerController : MonoBehaviour
         {
             lastMoveDirection = currentDirection;
         }
+
+        interactableTrigger.localPosition = new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0) * 0.5f;
     }
 
-    void HandleKeyReleases()
+    private void HandleKeyReleases()
     {
         if (Input.GetKeyUp(KeyCode.W) && (currentKeyPressed & MovementKeys.W) != 0)
         {
@@ -78,51 +111,50 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void AssignKeyPressed()
+    private void AssignKeyPressed()
     {
         if (currentKeyPressed == MovementKeys.None)
         {
             if (Input.GetKey(KeyCode.W))
             {
-                currentKeyPressed |= MovementKeys.W; // Lock to W
+                currentKeyPressed |= MovementKeys.W;
             }
             else if (Input.GetKey(KeyCode.S))
             {
-                currentKeyPressed |= MovementKeys.S; // Lock to S
+                currentKeyPressed |= MovementKeys.S;
             }
             else if (Input.GetKey(KeyCode.A))
             {
-                currentKeyPressed |= MovementKeys.A; // Lock to A
+                currentKeyPressed |= MovementKeys.A;
             }
             else if (Input.GetKey(KeyCode.D))
             {
-                currentKeyPressed |= MovementKeys.D; // Lock to D
+                currentKeyPressed |= MovementKeys.D;
             }
         }
     }
 
-    void PerformMovement()
+    private void PerformMovement()
     {
         if ((currentKeyPressed & MovementKeys.W) != 0 && Input.GetKey(KeyCode.W))
         {
-            currentDirection = new Vector2(0.1f, 0.05f); // Move Northeast
+            currentDirection = new Vector2(0.1f, 0.05f);
         }
         else if ((currentKeyPressed & MovementKeys.S) != 0 && Input.GetKey(KeyCode.S))
         {
-            currentDirection = new Vector2(-0.1f, -0.05f); // Move Southwest
+            currentDirection = new Vector2(-0.1f, -0.05f);
         }
         else if ((currentKeyPressed & MovementKeys.A) != 0 && Input.GetKey(KeyCode.A))
         {
-            currentDirection = new Vector2(-0.1f, 0.05f); // Move Northwest
+            currentDirection = new Vector2(-0.1f, 0.05f);
         }
         else if ((currentKeyPressed & MovementKeys.D) != 0 && Input.GetKey(KeyCode.D))
         {
-            currentDirection = new Vector2(0.1f, -0.05f); // Move Southeast
+            currentDirection = new Vector2(0.1f, -0.05f);
         }
     }
 
-
-    void HandleSpriteFlipX()
+    private void HandleSpriteFlipX()
     {
         if (currentDirection.x < 0)
         {
@@ -134,7 +166,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void AnimateSprite()
+    private void AnimateSprite()
     {
         animator.SetFloat("MoveX", Mathf.Abs(currentDirection.x));
         animator.SetFloat("MoveY", currentDirection.y);
@@ -142,4 +174,145 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("LastMoveX", Mathf.Abs(lastMoveDirection.x));
         animator.SetFloat("LastMoveY", lastMoveDirection.y);
     }
+    #endregion
+
+    #region Player Actions
+    private void ProcessPlayerActions()
+    {
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (currentPickableBox == null) // Pick up a box
+            {
+                if (interactableBox != null)
+                {
+                    PickUpBox(interactableBox);
+                }
+            }
+            else // Drop the box
+            {
+                DropBox();
+            }
+        }
+    }
+
+    private void PickUpBox(PickableBox box)
+    {
+        currentPickableBox = box;
+        currentPickableBox.transform.SetParent(pickableBoxTransform);
+        currentPickableBox.transform.localPosition = Vector3.zero;
+        currentPickableBox.transform.localScale *= 0.5f;
+        currentPickableBox.HighlightBox(false);
+        currentPickableBox.GetComponent<SpriteRenderer>().sortingOrder += 1;
+        currentPickableBox.GetComponent<Collider2D>().enabled = false;
+    }
+
+    private void DropBox()
+    {
+        // Calculate the target position in front of the player
+        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0) * 0.5f;
+
+        // Snap the target position to the nearest grid cell
+        Vector3 snappedPosition = SnapToGrid(targetPosition);
+
+        // Check if the snapped position is valid
+        if (IsPositionValid(snappedPosition))
+        {
+            // Place the box
+            currentPickableBox.transform.SetParent(null);
+            currentPickableBox.transform.position = snappedPosition;
+            currentPickableBox.transform.localScale = Vector3.one;
+            currentPickableBox.GetComponent<SpriteRenderer>().sortingOrder = 0;
+            currentPickableBox.GetComponent<Collider2D>().enabled = true;
+            currentPickableBox = null;
+        }
+        else
+        {
+            Debug.Log("Invalid position for box placement.");
+        }
+    }
+
+    private Vector3 SnapToGrid(Vector3 position)
+    {
+        float cellWidth = 0.08f; // Half of the X grid cell size
+        float cellHeight = 0.04f; // Half of the Y grid cell size
+
+        float snappedX = Mathf.Round(position.x / cellWidth) * cellWidth;
+        float snappedY = Mathf.Round(position.y / cellHeight) * cellHeight;
+
+        return new Vector3(snappedX, snappedY, 0.0f);
+    }
+
+    private bool IsPositionValid(Vector3 position)
+    {
+        // Check for map boundaries (customize based on your map size)
+        if (position.x < minimumX || position.x > maximumX || position.y < minimumY || position.y > maximumY)
+        {
+            return false; // Out of bounds
+        }
+
+        // Check for walls or other obstacles at the position
+        Collider2D collider = Physics2D.OverlapPoint(new Vector2(position.x, position.y), LayerMask.GetMask("Walls", "Interactable"));
+        if (collider != null)
+        {
+            return false; // Position is occupied
+        }
+
+        return true;
+    }
+
+    private void UpdateGhostBox()
+    {
+        // Calculate the snapped position for the ghost box
+        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0) * 0.5f;
+        Vector3 snappedPosition = SnapToGrid(targetPosition);
+
+        if (!IsPositionValid(snappedPosition))
+        {
+            DestroyGhostBox();
+            return;
+        }
+
+        if (previewBoxInstance == null)
+        {
+            // Instantiate the ghost box prefab when the player starts carrying a box
+            previewBoxInstance = Instantiate(previewBoxPrefab);
+        }
+
+        previewBoxInstance.transform.position = snappedPosition;
+    }
+
+    private void DestroyGhostBox()
+    {
+        if (previewBoxInstance != null)
+        {
+            Destroy(previewBoxInstance); // Clean up the ghost box when no longer needed
+            previewBoxInstance = null;
+        }
+    }
+
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("PickableBox") && currentPickableBox == null)
+        {
+            if (interactableBox != null)
+            {
+                interactableBox.HighlightBox(false);
+                interactableBox = null;
+            }
+            
+            interactableBox = other.GetComponent<PickableBox>();
+            interactableBox.HighlightBox(true);
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag("PickableBox") && interactableBox != null && currentPickableBox == null)
+        {
+            interactableBox.HighlightBox(false);
+            interactableBox = null;
+        }
+    }
+    #endregion
 }

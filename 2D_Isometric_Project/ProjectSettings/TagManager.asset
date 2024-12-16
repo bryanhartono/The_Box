@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - PickableBox
   layers:
   - Default
   - TransparentFX
@@ -11,8 +12,8 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
+  - Player
+  - Interactable
   - 
   - 
   - 
@@ -44,6 +45,6 @@ TagManager:
   - name: Tilemap
     uniqueID: 3428945919
     locked: 0
-  - name: Player
+  - name: Entities
     uniqueID: 1355329135
     locked: 0

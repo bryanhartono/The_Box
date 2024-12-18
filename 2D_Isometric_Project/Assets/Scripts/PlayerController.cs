@@ -28,6 +28,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float minimumY = -0.56f;
     [SerializeField] private float maximumY = 0.48f;
 
+    [SerializeField] private float yOffsetValue = 0.4f;
+
+    private Vector3 currentGhostBoxPosition;
     private Vector2 currentDirection;
     private Vector2 lastMoveDirection;
     private MovementKeys currentKeyPressed = MovementKeys.None;
@@ -35,10 +38,16 @@ public class PlayerController : MonoBehaviour
 
     private PickableBox interactableBox = null; // Box currently in range
     private GameObject previewBoxInstance = null; // Reference to the instantiated ghost box
+
+    private float cellWidth = 0.08f;
+    private float cellHeight = 0.04f;
+
     
     private void Awake() 
     {
         lastMoveDirection = new Vector2(0.1f, -0.05f);
+
+        currentGhostBoxPosition = Vector3.negativeInfinity;
     }
 
     private void Update()
@@ -209,7 +218,7 @@ public class PlayerController : MonoBehaviour
     private void DropBox()
     {
         // Calculate the target position in front of the player
-        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0) * 0.5f;
+        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0);
 
         // Snap the target position to the nearest grid cell
         Vector3 snappedPosition = SnapToGrid(targetPosition);
@@ -217,6 +226,9 @@ public class PlayerController : MonoBehaviour
         // Check if the snapped position is valid
         if (IsPositionValid(snappedPosition))
         {
+            // reset preview box position
+            currentGhostBoxPosition = Vector3.negativeInfinity;
+
             // Place the box
             currentPickableBox.transform.SetParent(null);
             currentPickableBox.transform.position = snappedPosition;
@@ -233,13 +245,22 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 SnapToGrid(Vector3 position)
     {
-        float cellWidth = 0.08f; // Half of the X grid cell size
-        float cellHeight = 0.04f; // Half of the Y grid cell size
-
+        // Round the position to the nearest grid cell
         float snappedX = Mathf.Round(position.x / cellWidth) * cellWidth;
         float snappedY = Mathf.Round(position.y / cellHeight) * cellHeight;
 
-        return new Vector3(snappedX, snappedY, 0.0f);
+        // Adjust for pivot difference (Y-offset)
+        float pivotOffsetY = yOffsetValue * cellHeight; // Convert relative offset to world units
+        snappedY += pivotOffsetY;
+
+        if (currentGhostBoxPosition.x != snappedX && currentGhostBoxPosition.y != snappedY)
+        {
+            currentGhostBoxPosition.x = snappedX;
+            currentGhostBoxPosition.y = snappedY;
+            currentGhostBoxPosition.z = 0.0f;
+        }
+
+        return currentGhostBoxPosition; 
     }
 
     private bool IsPositionValid(Vector3 position)
@@ -263,8 +284,10 @@ public class PlayerController : MonoBehaviour
     private void UpdateGhostBox()
     {
         // Calculate the snapped position for the ghost box
-        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0) * 0.5f;
+        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0);
         Vector3 snappedPosition = SnapToGrid(targetPosition);
+
+        Debug.Log("Current snapped position: " + snappedPosition);
 
         if (!IsPositionValid(snappedPosition))
         {

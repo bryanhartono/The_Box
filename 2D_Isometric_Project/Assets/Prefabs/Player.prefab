@@ -198,8 +198,14 @@ MonoBehaviour:
   body: {fileID: 7665952286470280547}
   spriteRenderer: {fileID: 7713597782749342163}
   animator: {fileID: 7713597782749342174}
+  interactableTrigger: {fileID: 0}
+  pickableBoxTransform: {fileID: 0}
+  previewBoxPrefab: {fileID: 0}
   moveSpeed: 4
-  holdPosition: {fileID: 7680730438561021351}
+  minimumX: -1.04
+  maximumX: 1.04
+  minimumY: -0.56
+  maximumY: 0.48
 --- !u!1 &7713597782749342165
 GameObject:
   m_ObjectHideFlags: 0

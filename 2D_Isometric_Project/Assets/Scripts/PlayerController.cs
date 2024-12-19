@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 [System.Flags]
 public enum MovementKeys : byte
@@ -20,33 +21,29 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform interactableTrigger;
     [SerializeField] private Transform pickableBoxTransform;
     [SerializeField] private GameObject previewBoxPrefab;
+    [SerializeField] private Tilemap groundTilemap;
     [SerializeField] private float moveSpeed = 1.0f;
-    
-    [Header("Placeable Area Limits")]
-    [SerializeField] private float minimumX = -1.04f;
-    [SerializeField] private float maximumX = 1.04f;
-    [SerializeField] private float minimumY = -0.56f;
-    [SerializeField] private float maximumY = 0.48f;
 
-    [SerializeField] private float yOffsetValue = 0.4f;
+    [Header("Map boundaries")]
+    [SerializeField] private float minimumX;
+    [SerializeField] private float maximumX;
+    [SerializeField] private float minimumY;
+    [SerializeField] private float maximumY;
 
+    private Vector3Int currentTilePosition;
     private Vector3 currentGhostBoxPosition;
+    private Vector3 currentGroundPosition;
     private Vector2 currentDirection;
     private Vector2 lastMoveDirection;
+
     private MovementKeys currentKeyPressed = MovementKeys.None;
     private PickableBox currentPickableBox = null;
-
     private PickableBox interactableBox = null; // Box currently in range
     private GameObject previewBoxInstance = null; // Reference to the instantiated ghost box
-
-    private float cellWidth = 0.08f;
-    private float cellHeight = 0.04f;
-
     
     private void Awake() 
     {
         lastMoveDirection = new Vector2(0.1f, -0.05f);
-
         currentGhostBoxPosition = Vector3.negativeInfinity;
     }
 
@@ -58,6 +55,7 @@ public class PlayerController : MonoBehaviour
 
         if (currentPickableBox != null) // If player is holding a box
         {
+            UpdateCurrentTilePosition();
             UpdateGhostBox();
         }
         else
@@ -217,25 +215,19 @@ public class PlayerController : MonoBehaviour
 
     private void DropBox()
     {
-        // Calculate the target position in front of the player
-        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0);
-
-        // Snap the target position to the nearest grid cell
-        Vector3 snappedPosition = SnapToGrid(targetPosition);
-
-        // Check if the snapped position is valid
-        if (IsPositionValid(snappedPosition))
+        // Place the box at the ghost box position
+        if (IsPositionValid(currentGhostBoxPosition))
         {
-            // reset preview box position
-            currentGhostBoxPosition = Vector3.negativeInfinity;
-
             // Place the box
             currentPickableBox.transform.SetParent(null);
-            currentPickableBox.transform.position = snappedPosition;
+            currentPickableBox.transform.position = currentGhostBoxPosition;
             currentPickableBox.transform.localScale = Vector3.one;
             currentPickableBox.GetComponent<SpriteRenderer>().sortingOrder = 0;
             currentPickableBox.GetComponent<Collider2D>().enabled = true;
             currentPickableBox = null;
+
+            // Reset preview box position
+            currentGhostBoxPosition = Vector3.negativeInfinity;
         }
         else
         {
@@ -243,29 +235,9 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private Vector3 SnapToGrid(Vector3 position)
-    {
-        // Round the position to the nearest grid cell
-        float snappedX = Mathf.Round(position.x / cellWidth) * cellWidth;
-        float snappedY = Mathf.Round(position.y / cellHeight) * cellHeight;
-
-        // Adjust for pivot difference (Y-offset)
-        float pivotOffsetY = yOffsetValue * cellHeight; // Convert relative offset to world units
-        snappedY += pivotOffsetY;
-
-        if (currentGhostBoxPosition.x != snappedX && currentGhostBoxPosition.y != snappedY)
-        {
-            currentGhostBoxPosition.x = snappedX;
-            currentGhostBoxPosition.y = snappedY;
-            currentGhostBoxPosition.z = 0.0f;
-        }
-
-        return currentGhostBoxPosition; 
-    }
-
     private bool IsPositionValid(Vector3 position)
     {
-        // Check for map boundaries (customize based on your map size)
+        // Check for map boundaries
         if (position.x < minimumX || position.x > maximumX || position.y < minimumY || position.y > maximumY)
         {
             return false; // Out of bounds
@@ -283,13 +255,33 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateGhostBox()
     {
-        // Calculate the snapped position for the ghost box
-        Vector3 targetPosition = transform.position + new Vector3(lastMoveDirection.x, lastMoveDirection.y, 0);
-        Vector3 snappedPosition = SnapToGrid(targetPosition);
+        // Calculate the position for the ghost box
+        Vector3 valueToAdd = Vector3.zero;
 
-        Debug.Log("Current snapped position: " + snappedPosition);
+        if (lastMoveDirection == new Vector2(0.1f, 0.05f))
+        {
+            valueToAdd = new Vector3(0.08f, 0.04f, 0);
+        }
+        else if (lastMoveDirection == new Vector2(-0.1f, 0.05f))
+        {
+            valueToAdd = new Vector3(-0.08f, 0.04f, 0);
+        }
+        else if (lastMoveDirection == new Vector2(0.1f, -0.05f))
+        {
+            valueToAdd = new Vector3(0.08f, -0.04f, 0);
+        }
+        else if (lastMoveDirection == new Vector2(-0.1f, -0.05f))
+        {
+            valueToAdd = new Vector3(-0.08f, -0.04f, 0);
+        }
+        else
+        {
+            valueToAdd = Vector3.zero;
+        }
 
-        if (!IsPositionValid(snappedPosition))
+        Vector3 targetPosition = currentGroundPosition + valueToAdd;
+
+        if (!IsPositionValid(targetPosition))
         {
             DestroyGhostBox();
             return;
@@ -301,7 +293,8 @@ public class PlayerController : MonoBehaviour
             previewBoxInstance = Instantiate(previewBoxPrefab);
         }
 
-        previewBoxInstance.transform.position = snappedPosition;
+        previewBoxInstance.transform.position = targetPosition;
+        currentGhostBoxPosition = targetPosition;
     }
 
     private void DestroyGhostBox()
@@ -313,6 +306,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void UpdateCurrentTilePosition()
+    {
+        // Convert the player's world position to a grid position
+        currentTilePosition = groundTilemap.WorldToCell(transform.position);
+
+        // Get the center position of the tile in world space
+        currentGroundPosition = groundTilemap.GetCellCenterWorld(currentTilePosition);
+        currentGroundPosition.y += 0.08f;
+    }
 
     private void OnTriggerEnter2D(Collider2D other)
     {

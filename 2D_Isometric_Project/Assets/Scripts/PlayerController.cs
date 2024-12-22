@@ -244,9 +244,10 @@ public class PlayerController : MonoBehaviour
         }
 
         // Check for walls or other obstacles at the position
-        Collider2D collider = Physics2D.OverlapPoint(new Vector2(position.x, position.y), LayerMask.GetMask("Walls", "Interactable"));
+        Collider2D collider = Physics2D.OverlapPoint(new Vector2(position.x, position.y), LayerMask.GetMask("Walls", "Interactable, GoalPlatform"));
         if (collider != null)
         {
+            Debug.Log("TEST");
             return false; // Position is occupied
         }
 

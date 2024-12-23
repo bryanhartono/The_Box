@@ -71,8 +71,11 @@ public class PlayerController : MonoBehaviour
 
     private void ProcessInputs()
     {
-        ProcessPlayerMovement();
-        ProcessPlayerActions();
+        if (Time.timeScale != 0f)
+        {
+            ProcessPlayerMovement();
+            ProcessPlayerActions();
+        }
     }
 
     #region Player Movement

@@ -1,7 +1,10 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class LevelManager : MonoBehaviour
 {
+    [SerializeField] private List<string> levelList;
+
     private static LevelManager _instance;
 
     public static LevelManager Instance { get { return _instance; } }
@@ -14,8 +17,14 @@ public class LevelManager : MonoBehaviour
         } 
         else 
         {
+            DontDestroyOnLoad(gameObject);
             _instance = this;
         }
+    }
+
+    public void LoadLevelList(ref List<string> currentLevelList)
+    {
+        currentLevelList = levelList;
     }
 
     public void LoadLevel(string levelName)

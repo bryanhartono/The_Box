@@ -18,11 +18,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Rigidbody2D body;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Animator animator;
-    [SerializeField] private Transform interactableTrigger;
-    [SerializeField] private Transform pickableBoxTransform;
-    [SerializeField] private GameObject previewBoxPrefab;
     [SerializeField] private Tilemap groundTilemap;
     [SerializeField] private float moveSpeed = 1.0f;
+
+    [Header("Box related")]
+    [SerializeField] private Transform interactableTrigger;
+    [SerializeField] private Transform pickableBoxTransform;
+    [SerializeField] private GameObject movableBoxParent;
+    [SerializeField] private GameObject previewBoxPrefab;
 
     [Header("Map boundaries")]
     [SerializeField] private float minimumX;
@@ -222,8 +225,8 @@ public class PlayerController : MonoBehaviour
         if (IsPositionValid(currentGhostBoxPosition))
         {
             // Place the box
-            currentPickableBox.transform.SetParent(null);
-            currentPickableBox.transform.position = currentGhostBoxPosition;
+            currentPickableBox.transform.SetParent(movableBoxParent.transform);
+            currentPickableBox.transform.localPosition = currentGhostBoxPosition;
             currentPickableBox.transform.localScale = Vector3.one;
             currentPickableBox.GetComponent<SpriteRenderer>().sortingOrder = 0;
             currentPickableBox.GetComponent<Collider2D>().enabled = true;

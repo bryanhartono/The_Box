@@ -41,27 +41,16 @@ public class LevelSelectionUI : MonoBehaviour
                 currentYPos -= yDistanceBetweenLevelButtons;
             }
             
-            GameObject buttonObj = Instantiate(levelButtonPrefab, levelPanel);
-            buttonObj.transform.localPosition = new Vector3(currentXPos + ((i % 5) * xDistanceBetweenLevelButtons), currentYPos, 0);
-            Button button = buttonObj.GetComponent<Button>();
-            int levelID = i;
+            GameObject levelButtonGameObject = Instantiate(levelButtonPrefab, levelPanel);
+            levelButtonGameObject.transform.localPosition = new Vector3(currentXPos + ((i % 5) * xDistanceBetweenLevelButtons), currentYPos, 0);
 
-            // Assign the button click event
-            button.onClick.AddListener(() => OnLevelButtonClicked(levelID));
-
-            // Update button text
-            Text buttonText = buttonObj.GetComponentInChildren<Text>();
-            if (buttonText != null)
+            // init button
+            LevelButton currentLevelButton = levelButtonGameObject.GetComponent<LevelButton>();
+            if (currentLevelButton != null)
             {
-                buttonText.text = $"Level {levelID + 1}";
+                currentLevelButton.Init(i);
             }
         }
-    }
-
-    private void OnLevelButtonClicked(int levelID)
-    {
-        string levelName = levelList[levelID];
-        LevelManager.Instance.LoadLevel(levelName);
     }
 
     public void OnBackButtonClicked()

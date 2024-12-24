@@ -22,6 +22,16 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    public string getLevelName(int levelId)
+    {
+        if (levelList.Count >= levelId)
+        {
+            return levelList[levelId];
+        }
+
+        return "";
+    }
+
     public void LoadLevelList(ref List<string> currentLevelList)
     {
         currentLevelList = levelList;

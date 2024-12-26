@@ -6,7 +6,7 @@ public class MainMenuUI : MonoBehaviour
 {
     public void StartGame()
     {
-        LevelManager.Instance.LoadLevel("LevelSelection");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("LevelSelection");
     }
 
     public void QuitGame()

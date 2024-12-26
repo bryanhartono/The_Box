@@ -20,6 +20,8 @@ public class GoalPlatform : MonoBehaviour
         timerController.StopTimer();
         levelUI.ShowLevelEndPanel(true);
         light2D.color = victoryColor;
+
+        LevelManager.Instance.CompleteLevel(timerController.GetRemainingTime());
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

@@ -7,8 +7,6 @@ public class LevelSelectionUI : MonoBehaviour
     [SerializeField] private GameObject levelButtonPrefab; // Assign the level button prefab in the Inspector
     [SerializeField] private Transform levelPanel; // Assign the panel that holds the buttons in the Inspector
 
-    List<string> levelList = new List<string>();
-
     private const int xDistanceBetweenLevelButtons = 325;
     private const int yDistanceBetweenLevelButtons = 300;
     private const int levelButtonStartXPos = -650;
@@ -26,15 +24,13 @@ public class LevelSelectionUI : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
-
-        // Get levels from level manager
-        LevelManager.Instance.LoadLevelList(ref levelList);
         
         int currentXPos = levelButtonStartXPos;
         int currentYPos = levelButtonStartYPos;
+        int levelCount = LevelManager.Instance.GetLevelCount();
 
         // Dynamically create level buttons
-        for (int i = 0; i < levelList.Count; i++)
+        for (int i = 0; i < levelCount; i++)
         {
             if (i != 0 && i % 5 == 0)
             {
@@ -48,7 +44,10 @@ public class LevelSelectionUI : MonoBehaviour
             LevelButton currentLevelButton = levelButtonGameObject.GetComponent<LevelButton>();
             if (currentLevelButton != null)
             {
-                currentLevelButton.Init(i);
+                bool isUnlocked = SaveManager.Instance.IsLevelUnlocked(i);
+                float bestTime = SaveManager.Instance.GetLevelTime(i);
+
+                currentLevelButton.Init(i + 1, isUnlocked, bestTime);
             }
         }
     }

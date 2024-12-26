@@ -235,10 +235,6 @@ public class PlayerController : MonoBehaviour
             // Reset preview box position
             currentGhostBoxPosition = Vector3.negativeInfinity;
         }
-        else
-        {
-            Debug.Log("Invalid position for box placement.");
-        }
     }
 
     private bool IsPositionValid(Vector3 position)
@@ -253,7 +249,6 @@ public class PlayerController : MonoBehaviour
         Collider2D collider = Physics2D.OverlapPoint(new Vector2(position.x, position.y), LayerMask.GetMask("Walls", "Interactable, GoalPlatform"));
         if (collider != null)
         {
-            Debug.Log("TEST");
             return false; // Position is occupied
         }
 

@@ -52,6 +52,11 @@ public class TimerController : MonoBehaviour
         isTimerRunning = true;
     }
 
+    public float GetRemainingTime()
+    {
+        return timeRemaining;
+    }
+
     private void UpdateTimerDisplay()
     {
         // Format time as minutes:seconds

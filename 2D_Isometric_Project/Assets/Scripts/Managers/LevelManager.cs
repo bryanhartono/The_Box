@@ -3,17 +3,18 @@ using System.Collections.Generic;
 
 public class LevelManager : MonoBehaviour
 {
-    [SerializeField] private List<string> levelList;
-
     private static LevelManager _instance;
-
     public static LevelManager Instance { get { return _instance; } }
+
+    [SerializeField] private int levelCount;
+
+    private int currentLevelId;
 
     private void Awake()
     {
         if (_instance != null && _instance != this)
         {
-            Destroy(this.gameObject);
+            Destroy(gameObject);
         } 
         else 
         {
@@ -22,24 +23,15 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    public string getLevelName(int levelId)
+    public int GetLevelCount()
     {
-        if (levelList.Count >= levelId)
-        {
-            return levelList[levelId];
-        }
-
-        return "";
+        return levelCount;
     }
 
-    public void LoadLevelList(ref List<string> currentLevelList)
+    public void LoadLevel(int levelId)
     {
-        currentLevelList = levelList;
-    }
-
-    public void LoadLevel(string levelName)
-    {
-        UnityEngine.SceneManagement.SceneManager.LoadScene(levelName);
+        currentLevelId = levelId - 1;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Level_" + levelId.ToString());
     }
 
     public void RestartLevel()
@@ -51,5 +43,14 @@ public class LevelManager : MonoBehaviour
     public void LoadMainMenu()
     {
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
+    public void CompleteLevel(float timeTaken)
+    {
+        // Unlock the next level
+        SaveManager.Instance.UnlockLevel(currentLevelId + 1);
+
+        // Save the best time for the current level
+        SaveManager.Instance.SaveLevelTime(currentLevelId, timeTaken);
     }
 }

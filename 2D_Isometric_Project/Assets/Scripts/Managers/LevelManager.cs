@@ -10,6 +10,8 @@ public class LevelManager : MonoBehaviour
 
     private int currentLevelId;
 
+    public bool shouldOpenLevelSelect { get; private set; }
+
     private void Awake()
     {
         if (_instance != null && _instance != this)
@@ -42,6 +44,13 @@ public class LevelManager : MonoBehaviour
 
     public void LoadMainMenu()
     {
+        shouldOpenLevelSelect = false;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
+    public void LoadLevelSelectionMenu()
+    {
+        shouldOpenLevelSelect = true;
         UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 

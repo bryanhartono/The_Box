@@ -5,8 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - PickableBox
-  - UnpickableBox
   - GoalPlatform
+  - Walls
   layers:
   - Default
   - TransparentFX

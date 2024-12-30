@@ -50,4 +50,13 @@ public class LevelUI : MonoBehaviour
         SoundManager.Instance.PlaySFX(SFXType.ButtonClick);
         optionsPanel.SetActive(true);
     }
+
+    public void OnLevelSelectionButtonClicked()
+    {
+        SoundManager.Instance.PlaySFX(SFXType.ButtonClick);
+
+        // Resume the game and load the level select menu
+        GameManager.Instance.ResumeGame();
+        LevelManager.Instance.LoadLevelSelectionMenu();
+    }
 }

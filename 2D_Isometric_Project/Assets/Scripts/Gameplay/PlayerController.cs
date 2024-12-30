@@ -248,6 +248,8 @@ public class PlayerController : MonoBehaviour
         // Perform the raycast from the player's position in the current direction
         RaycastHit2D hit = Physics2D.Raycast(targetPosition, lastMoveDirection.normalized, rayLength, invalidLayers);
 
+        Debug.DrawRay(targetPosition, lastMoveDirection.normalized * rayLength, Color.red, 0.1f);
+
         if (hit.collider != null)
         {
             return false;

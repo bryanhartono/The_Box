@@ -94,7 +94,7 @@ public class SoundManager : MonoBehaviour
                 bgmSource.Stop();
                 bgmSource.clip = bgmClips[bgmIndex];
                 bgmSource.loop = true;
-                bgmSource.volume = bgmVolume;
+                SetBGMVolume(bgmVolume);
                 bgmSource.Play();
             }
         }

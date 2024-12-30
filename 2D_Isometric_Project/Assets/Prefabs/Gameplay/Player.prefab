@@ -201,15 +201,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 896
   moveSpeed: 4
-  rayLength: 0.04
+  rayLength: 0.08
   interactableTrigger: {fileID: 858207719}
   pickableBoxTransform: {fileID: 7680730438561021351}
   movableBoxParent: {fileID: 0}
   previewBoxPrefab: {fileID: 951508579520772385, guid: f61c64ccc8ecb446bb4312ea791845fe, type: 3}
-  minimumX: -1.04
-  maximumX: 1.04
-  minimumY: -0.56
-  maximumY: 0.48
 --- !u!1 &7713597782749342165
 GameObject:
   m_ObjectHideFlags: 0
